@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "quarkus:dev",
+      "type": "shell",
+      "command": ".\\mvnw quarkus:dev",
+      "options": { "cwd": "${workspaceFolder}\\api" }, 
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": [ { "regexp": ".*" } ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*Quarkus .* starting in dev mode.*",
+            "endsPattern": ".*Listening on: .*|.*Installed features.*"
+          }
+        }
+      ]
+    }
+  ]
+}
