@@ -4,19 +4,35 @@
     {
       "label": "quarkus:dev",
       "type": "shell",
-      "command": ".\\mvnw quarkus:dev",
-      "options": { "cwd": "${workspaceFolder}\\api" }, 
+      "command": ".\\mvnw.cmd quarkus:dev -Ddebug",
+      "options": { "cwd": "${workspaceFolder}\\api" },
       "isBackground": true,
-      "problemMatcher": [
-        {
-          "pattern": [ { "regexp": ".*" } ],
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": ".*Quarkus .* starting in dev mode.*",
-            "endsPattern": ".*Listening on: .*|.*Installed features.*"
+      "problemMatcher": {
+        "owner": "java",
+        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "pattern": [
+          {
+            "regexp": "^\\[ERROR\\]\\s+(.+?\\.java):\\[(\\d+),(\\d+)\\]\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "message": 4
+          },
+          {
+            "regexp": "^\\[ERROR\\]\\s+(.*)$",
+            "message": 1
           }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Quarkus .* starting in dev mode.*",
+          "endsPattern": ".*(Listening on: .+|Installed features:.*)"
         }
-      ]
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }
