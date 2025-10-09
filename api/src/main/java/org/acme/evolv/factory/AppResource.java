@@ -25,7 +25,7 @@ public class AppResource {
             throw new BadRequestException("name required");
         }
         int p = (req.port != null) ? req.port : PortUtils.pickPort(req.name());
-        var result = svc.createAndRun(req.name(), req.port);
+        var result = svc.createAndRun(req.name(), p);
 
         return new CreateResp(
                 req.name(),

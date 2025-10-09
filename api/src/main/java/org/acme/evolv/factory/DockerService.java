@@ -12,6 +12,7 @@ public class DockerService {
     private static final Duration LONG = Duration.ofMinutes(15);
 
     private static boolean isWindows() {
+        LOG.debug("Checking if OS is Windows");
         String os = System.getProperty("os.name");
         return os != null && os.toLowerCase().contains("win");
     }
