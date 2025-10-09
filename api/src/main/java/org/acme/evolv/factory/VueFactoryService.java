@@ -2,6 +2,8 @@ package org.acme.evolv.factory;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -13,6 +15,9 @@ import java.nio.file.Path;
 public class VueFactoryService {
 
     private static final Logger LOG = Logger.getLogger(VueFactoryService.class);
+
+    @Inject
+    LogSseHub hub;
 
     @ConfigProperty(name = "factory.workspace", defaultValue = "C:\\\\vue-factory")
     String workspace;
@@ -34,7 +39,7 @@ public class VueFactoryService {
     public record Result(String image, String container, String url, String logs) {
     }
 
-    public Result createAndRun(String name, int port) throws Exception {
+    public Result createAndRun(String name, int port, String streamId) throws Exception {
         String safe = name.replaceAll("[^a-zA-Z0-9-_]", "-").toLowerCase();
 
         File root = new File(workspace);
@@ -47,42 +52,55 @@ public class VueFactoryService {
         }
 
         StringBuilder log = new StringBuilder();
+        var out = streamer(streamId);
 
-        // 2) npx create-vite
-        log.append("create-vite:\n")
-                .append(VueUtils.runNpxCreateVite(root, safe)).append("\n");
+        try {
+            // 1) npx create-vite（带回调）
+            log.append("create-vite:\n")
+                    .append(VueUtils.runNpxCreateVite(root, safe, out)).append("\n");
 
-        java.nio.file.Files.writeString(new File(appDir, "Dockerfile").toPath(), dockerfile());
-        java.nio.file.Files.writeString(new File(appDir, "nginx.conf").toPath(), nginxConf());
+            // 2) 写 Dockerfile / nginx.conf
+            java.nio.file.Files.writeString(new File(appDir, "Dockerfile").toPath(), dockerfile());
+            java.nio.file.Files.writeString(new File(appDir, "nginx.conf").toPath(), nginxConf());
 
-        // 4) npm ci / install + build
-        boolean useCi = new File(appDir, "package-lock.json").exists();
-        log.append("npm ").append(useCi ? "ci" : "install").append(":\n")
-                .append(VueUtils.runNpmCiOrInstall(appDir, useCi)).append("\n");
+            // 3) npm ci / install + build（带回调）
+            boolean useCi = new File(appDir, "package-lock.json").exists();
+            log.append("npm ").append(useCi ? "ci" : "install").append(":\n")
+                    .append(VueUtils.runNpmCiOrInstall(appDir, useCi, out)).append("\n");
 
-        log.append("npm run build:\n")
-                .append(VueUtils.runNpmRunBuild(appDir)).append("\n");
+            log.append("npm run build:\n")
+                    .append(VueUtils.runNpmRunBuild(appDir, out)).append("\n");
 
-        // 5) docker build / run
-        String image = registryPrefix + safe + ":latest";
-        String container = "vue-" + safe;
+            // 4) docker build / run（带回调）
+            String image = registryPrefix + safe + ":latest";
+            String container = "vue-" + safe;
 
-        log.append("docker build:\n")
-                .append(docker.build(appDir, image)).append("\n");
+            log.append("docker build:\n")
+                    .append(docker.build(appDir, image, streamId, hub)).append("\n");
 
-        String rmOut = docker.rmForce(container);
-        if (rmOut != null && !rmOut.isBlank()) {
-            log.append("docker rm (old):\n").append(rmOut).append("\n");
+            String rmOut = docker.rmForce(container, streamId, hub);
+            if (rmOut != null && !rmOut.isBlank()) {
+                log.append("docker rm (old):\n").append(rmOut).append("\n");
+            }
+
+            log.append("docker run:\n")
+                    .append(docker.runDetached(container, port, image, streamId, hub)).append("\n");
+
+            String url = "http://localhost:" + port;
+            return new Result(image, container, url, log.toString());
+        } finally {
+            if (streamId != null && !streamId.isBlank()) {
+                hub.send(streamId, "[DONE]");
+                hub.close(streamId);
+            }
         }
-
-        log.append("docker run:\n")
-                .append(docker.runDetached(container, port, image)).append("\n");
-
-        String url = "http://localhost:" + port;
-        return new Result(image, container, url, log.toString());
     }
 
-    public Result createFromTemplate(String name, int port) throws Exception {
+    public Result createAndRun(String name, int port) throws Exception {
+        return createAndRun(name, port, null);
+    }
+
+    public Result createFromTemplate(String name, int port, String streamId) throws Exception {
         String safe = name.replaceAll("[^a-zA-Z0-9-_]", "-").toLowerCase();
         File root = new File(workspace);
         if (!root.exists())
@@ -93,60 +111,95 @@ public class VueFactoryService {
             appDir.mkdirs();
 
         StringBuilder log = new StringBuilder();
+        var out = streamer(streamId);
 
-        // Step 1: copy + patch
-        vue.copyTemplate(Path.of(templateVuePath), appDir.toPath(), true);
-        vue.patchChatComponent(appDir.toPath(), "http://192.168.1.199:8000/api/v1/chat/gpt-ask");
+        try {
+            // Step 1: copy + patch
+            vue.copyTemplate(Path.of(templateVuePath), appDir.toPath(), true);
+            log.append("copy template -> ").append(appDir.getAbsolutePath()).append("\n");
+            if (streamId != null && !streamId.isBlank())
+                hub.send(streamId, "copy template done");
 
-        Path dockerfilePath = appDir.toPath().resolve("Dockerfile");
-        Path nginxConfPath = appDir.toPath().resolve("nginx.conf");
-        if (!Files.exists(dockerfilePath)) {
-            Files.writeString(dockerfilePath, dockerfile());
-            log.append("write default Dockerfile\n");
+            vue.patchChatComponent(appDir.toPath(), "http://192.168.1.199:8000/api/v1/chat/gpt-ask");
+            log.append("patch ChatComponent.tsx\n");
+            if (streamId != null && !streamId.isBlank())
+                hub.send(streamId, "patch ChatComponent.tsx done");
+
+            // Step 1.5: ensure Dockerfile & nginx.conf
+            Path dockerfilePath = appDir.toPath().resolve("Dockerfile");
+            Path nginxConfPath = appDir.toPath().resolve("nginx.conf");
+            if (!Files.exists(dockerfilePath)) {
+                Files.writeString(dockerfilePath, dockerfile());
+                log.append("write default Dockerfile\n");
+            }
+            if (!Files.exists(nginxConfPath)) {
+                Files.writeString(nginxConfPath, nginxConf());
+                log.append("write default nginx.conf\n");
+            }
+
+            // Step 1.75: relax ts checks
+            vue.relaxTypeChecks(appDir.toPath());
+            log.append("relax ts checks\n");
+
+            // Step 2: npm ci / install + build (real-time output)
+            boolean useCi = appDir.toPath().resolve("package-lock.json").toFile().exists();
+            log.append("npm ").append(useCi ? "ci" : "install").append(":\n")
+                    .append(VueUtils.runNpmCiOrInstall(appDir, useCi, out)).append("\n");
+
+            log.append("npm run build:\n")
+                    .append(VueUtils.runNpmRunBuild(appDir, out)).append("\n");
+
+            // Step 3: docker build / run（if exists, just copy dist）
+            String image = registryPrefix + safe + ":latest";
+            String container = "vue-" + safe;
+
+            if (docker.exists(container)) {
+                docker.ensureRunning(container);
+                log.append("container exists: ").append(container).append("\n");
+                if (streamId != null && !streamId.isBlank())
+                    hub.send(streamId, "container exists, updating static files...");
+
+                // clear /usr/share/nginx/html + copy dist/* to it  
+                docker.execSafe(container, "mkdir -p /usr/share/nginx/html", streamId, hub);
+                docker.execSafe(container, "find /usr/share/nginx/html -mindepth 1 -exec rm -rf {} + || true", streamId,
+                        hub);
+
+                docker.execSafe(container, "rm -rf /tmp/distcopy && mkdir -p /tmp/distcopy", streamId, hub);
+                docker.cpToContainer(appDir.toPath().resolve("dist"), container, "/tmp/distcopy", streamId, hub);
+                docker.execSafe(container, "cp -a /tmp/distcopy/dist/. /usr/share/nginx/html/ && rm -rf /tmp/distcopy",
+                        streamId, hub);
+
+                log.append("updated /usr/share/nginx/html from dist\n");
+                return new Result(image, container, "http://localhost:" + port, log.toString());
+            } else {
+                log.append("docker build:\n").append(docker.build(appDir, image, streamId, hub)).append("\n");
+
+                String rmOut = docker.rmForce(container, streamId, hub);
+                if (rmOut != null && !rmOut.isBlank())
+                    log.append("docker rm (old):\n").append(rmOut).append("\n");
+
+                log.append("docker run:\n").append(docker.runDetached(container, port, image, streamId, hub))
+                        .append("\n");
+
+                String url = "http://localhost:" + port;
+                return new Result(image, container, url, log.toString());
+            }
+        } finally {
+            if (streamId != null && !streamId.isBlank()) {
+                hub.send(streamId, "[DONE]");
+                hub.close(streamId);
+            }
         }
-        if (!Files.exists(nginxConfPath)) {
-            Files.writeString(nginxConfPath, nginxConf());
-            log.append("write default nginx.conf\n");
-        }
-        vue.relaxTypeChecks(appDir.toPath());
-
-        // Step 2: npm build
-        boolean useCi = appDir.toPath().resolve("package-lock.json").toFile().exists();
-        VueUtils.runNpmCiOrInstall(appDir, useCi);
-        VueUtils.runNpmRunBuild(appDir);
-
-        // Step 3: docker build / run
-        String image = registryPrefix + safe + ":latest";
-        String container = "vue-" + safe;
-
-        if (docker.exists(container)) {
-            docker.ensureRunning(container);
-            log.append("container exists: ").append(container).append("\n");
-            docker.execSafe(container, "mkdir -p /usr/share/nginx/html");
-            docker.cpToContainer(appDir.toPath().resolve("dist"), container, "/usr/share/nginx/html/");
-        } else {
-            docker.build(appDir, image);
-            docker.rmForce(container);
-            docker.runDetached(container, port, image);
-        }
-
-        return new Result(image, container, "http://localhost:" + port, log.toString());
     }
 
     private String dockerfile() {
         return """
-                FROM node:20-alpine AS build
-                WORKDIR /app
-                COPY package*.json ./
-                RUN npm ci COPY . .
-                RUN npm run build
-
                 FROM nginx:1.27-alpine
                 COPY nginx.conf /etc/nginx/nginx.conf
-                COPY --from=build /app/dist /usr/share/nginx/html
+                COPY dist /usr/share/nginx/html
                 EXPOSE 80
                 CMD ["nginx","-g","daemon off;"]
-                """;
+                    """;
     }
 
     private String nginxConf() {
@@ -166,5 +219,13 @@ public class VueFactoryService {
                         }
                     }
                 } """;
+    }
+
+    private java.util.function.Consumer<String> streamer(String streamId) {
+        return (line) -> {
+            if (hub != null && streamId != null && !streamId.isBlank()) {
+                hub.send(streamId, line);
+            }
+        };
     }
 }

@@ -1,11 +1,13 @@
 package org.acme.evolv.factory;
 
 import org.jboss.logging.Logger;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /*
  * isWindows, npmCmd, npxCmd, dockerCmd
@@ -35,17 +37,18 @@ public class VueUtils {
         return isWindows() ? "docker.exe" : "docker";
     }
 
-
     /*
      * exec cmd in workDir, wait up to timeout.
      * return combined stdout+stderr.
      * if ignoreNonZeroExit is false, throw if exit code != 0.
      * logs are printed to console in real-time.
      */
-    public static String runDirect(List<String> cmd, File workDir, Duration timeout, boolean ignoreNonZeroExit)
+    public static String runDirect(List<String> cmd, File workDir, Duration timeout, boolean ignoreNonZeroExit,
+            java.util.function.Consumer<String> onLine)
             throws Exception {
         ProcessBuilder pb = new ProcessBuilder(cmd);
-        if (workDir != null) pb.directory(workDir);
+        if (workDir != null)
+            pb.directory(workDir);
         pb.redirectErrorStream(true);
         Process p = pb.start();
 
@@ -57,6 +60,9 @@ public class VueUtils {
                 while ((line = reader.readLine()) != null) {
                     System.out.println("[proc] " + line);
                     logBuffer.append(line).append("\n");
+                    if (onLine != null) {
+                        onLine.accept(line);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -79,23 +85,36 @@ public class VueUtils {
         return out;
     }
 
-    // ------------------ npm 辅助函数 ------------------
+    public static String runDirect(List<String> cmd, File workDir, Duration timeout,
+            boolean ignoreNonZeroExit) throws Exception {
+        return runDirect(cmd, workDir, timeout, ignoreNonZeroExit, null);
+    }
 
-    public static String runNpmCiOrInstall(File workDir, boolean useCi) throws Exception {
+    // ------------------ npm function ------------------
+
+    public static String runNpmCiOrInstall(File workDir, boolean useCi, Consumer<String> onLine) throws Exception {
         List<String> cmd = new ArrayList<>();
         cmd.add(npmCmd());
         cmd.add(useCi ? "ci" : "install");
         cmd.add("--no-audit");
         cmd.add("--no-fund");
-        return runDirect(cmd, workDir, LONG, false);
+        return runDirect(cmd, workDir, LONG, false, onLine);
     }
 
-    public static String runNpmRunBuild(File workDir) throws Exception {
+    // public static String runNpmCiOrInstall(File workDir, boolean useCi) throws Exception {
+    //     return runNpmCiOrInstall(workDir, useCi, null);
+    // }
+
+    public static String runNpmRunBuild(File workDir, Consumer<String> onLine) throws Exception {
         List<String> cmd = List.of(npmCmd(), "run", "build");
-        return runDirect(cmd, workDir, LONG, false);
+        return runDirect(cmd, workDir, LONG, false, onLine);
     }
 
-    public static String runNpxCreateVite(File workDir, String appName) throws Exception {
+    // public static String runNpmRunBuild(File workDir) throws Exception {
+    //     return runNpmRunBuild(workDir, null);
+    // }
+
+    public static String runNpxCreateVite(File workDir, String appName, Consumer<String> onLine) throws Exception {
         List<String> cmd = new ArrayList<>();
         cmd.add(npxCmd());
         cmd.add("--yes");
@@ -106,4 +125,8 @@ public class VueUtils {
         cmd.add("vue");
         return runDirect(cmd, workDir, LONG, false);
     }
+
+    // public static String runNpxCreateVite(File workDir, String appName) throws Exception {
+    //     return runNpxCreateVite(workDir, appName, null);
+    // }
 }
