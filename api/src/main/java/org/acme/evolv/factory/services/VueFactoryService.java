@@ -1,9 +1,11 @@
-package org.acme.evolv.factory;
+package org.acme.evolv.factory.services;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.acme.evolv.utils.LogSseHub;
+import org.acme.evolv.utils.VueUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -19,6 +21,12 @@ public class VueFactoryService {
     @Inject
     LogSseHub hub;
 
+    @Inject 
+    VueProjectService vue;
+
+    @Inject
+    DockerService docker;
+
     @ConfigProperty(name = "factory.workspace", defaultValue = "C:\\\\vue-factory")
     String workspace;
 
@@ -28,8 +36,6 @@ public class VueFactoryService {
     @ConfigProperty(name = "factory.templateVuePath", defaultValue = "E:\\\\lwpw\\\\EvolvAI\\\\sdk-ui\\\\chat-app")
     String templateVuePath;
 
-    private final DockerService docker = new DockerService();
-    private final VueProjectService vue = new VueProjectService();
 
     @PostConstruct
     void init() {
@@ -39,7 +45,7 @@ public class VueFactoryService {
     public record Result(String image, String container, String url, String logs) {
     }
 
-    public Result createAndRun(String name, int port, String streamId) throws Exception {
+    public Result createAndRun(String companyId, String name, int port, String streamId) throws Exception {
         String safe = name.replaceAll("[^a-zA-Z0-9-_]", "-").toLowerCase();
 
         File root = new File(workspace);
@@ -55,7 +61,7 @@ public class VueFactoryService {
         var out = streamer(streamId);
 
         try {
-            // 1) npx create-vite（带回调）
+            // 1) npx create-vite
             log.append("create-vite:\n")
                     .append(VueUtils.runNpxCreateVite(root, safe, out)).append("\n");
 
@@ -63,7 +69,7 @@ public class VueFactoryService {
             java.nio.file.Files.writeString(new File(appDir, "Dockerfile").toPath(), dockerfile());
             java.nio.file.Files.writeString(new File(appDir, "nginx.conf").toPath(), nginxConf());
 
-            // 3) npm ci / install + build（带回调）
+            // 3) npm ci / install + build
             boolean useCi = new File(appDir, "package-lock.json").exists();
             log.append("npm ").append(useCi ? "ci" : "install").append(":\n")
                     .append(VueUtils.runNpmCiOrInstall(appDir, useCi, out)).append("\n");
@@ -71,7 +77,7 @@ public class VueFactoryService {
             log.append("npm run build:\n")
                     .append(VueUtils.runNpmRunBuild(appDir, out)).append("\n");
 
-            // 4) docker build / run（带回调）
+            // 4) docker build / run
             String image = registryPrefix + safe + ":latest";
             String container = "vue-" + safe;
 
@@ -96,11 +102,11 @@ public class VueFactoryService {
         }
     }
 
-    public Result createAndRun(String name, int port) throws Exception {
-        return createAndRun(name, port, null);
+    public Result createAndRun(String companyId, String name, int port) throws Exception {
+        return createAndRun(companyId, name, port, null);
     }
 
-    public Result createFromTemplate(String name, int port, String streamId) throws Exception {
+    public Result createFromTemplate(String companyId, String name, int port, String streamId) throws Exception {
         String safe = name.replaceAll("[^a-zA-Z0-9-_]", "-").toLowerCase();
         File root = new File(workspace);
         if (!root.exists())
@@ -120,7 +126,10 @@ public class VueFactoryService {
             if (streamId != null && !streamId.isBlank())
                 hub.send(streamId, "copy template done");
 
-            vue.patchChatComponent(appDir.toPath(), "http://192.168.1.199:8000/api/v1/chat/gpt-ask");
+            vue.patchTsx(Path.of(templateVuePath), companyId);
+            vue.patchCss(Path.of(templateVuePath), companyId);
+
+
             log.append("patch ChatComponent.tsx\n");
             if (streamId != null && !streamId.isBlank())
                 hub.send(streamId, "patch ChatComponent.tsx done");

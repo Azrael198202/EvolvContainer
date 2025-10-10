@@ -1,4 +1,4 @@
-package org.acme.evolv.factory;
+package org.acme.evolv.utils;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.sse.Sse;

@@ -1,6 +1,14 @@
-package org.acme.evolv.factory;
+package org.acme.evolv.controls;
 
+import org.acme.evolv.DTO.ChatMessage;
+import org.acme.evolv.DTO.CreateReq;
+import org.acme.evolv.DTO.CreateResp;
+import org.acme.evolv.factory.services.VueFactoryService;
+import org.acme.evolv.factory.services.VueFactoryService.Result;
 import org.acme.evolv.factory.shell.Shell;
+import org.acme.evolv.utils.LogSseHub;
+import org.acme.evolv.utils.PortUtils;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
@@ -21,10 +29,6 @@ public class AppResource {
     @Inject
     LogSseHub hub; // for streaming logs sse/ws
 
-    public record CreateReq(String name, Integer port) {}
-    public record CreateResp(String name, int port, String container, String image, String url, String logs) {}
-    public record Message(String message) {}
-
     // -------------------- create (from scratch) --------------------
     @POST
     public CreateResp create(CreateReq req) throws Exception {
@@ -33,9 +37,10 @@ public class AppResource {
         }
         int p = (req.port() != null) ? req.port() : PortUtils.pickPort(req.name());
 
-        var result = svc.createAndRun(req.name(), p);
+        var result = svc.createAndRun(req.companyId(), req.name(), p);
 
         return new CreateResp(
+                req.companyId(),
                 req.name(),
                 p, 
                 result.container(),
@@ -47,20 +52,21 @@ public class AppResource {
     // -------------------- create from template (with SSE logs) --------------------
     @POST
     @Path("/template/{name}")
-    public VueFactoryService.Result createFromTemplate(
+    public VueFactoryService.Result createFromTemplate(            
             @PathParam("name") String name,
             @QueryParam("port") Integer port,
-            @QueryParam("streamId") String streamId   // front add streamId query param
+            @QueryParam("streamId") String streamId,   // front add streamId query param
+            @QueryParam("companyId") String companyId
     ) throws Exception {
         int p = (port != null) ? port : PortUtils.pickPort(name);
-        // important: pass streamId to svc
-        return svc.createFromTemplate(name, p, streamId);
+        // important: pass streamId to svc 
+        return svc.createFromTemplate(companyId, name, p, streamId);
     }
 
     // -------------------- remove --------------------
     @DELETE
     @Path("/{name}")
-    public Message remove(@PathParam("name") String name) throws Exception { // add name param
+    public ChatMessage remove(@PathParam("name") String name) throws Exception { // add name param
         String safe = name.replaceAll("[^a-zA-Z0-9-_]", "-").toLowerCase();
         String container = "vue-" + safe;
 
@@ -72,7 +78,7 @@ public class AppResource {
                 dockerWinAbs
         );
 
-        return new Message("removed: " + container + (out.isBlank() ? "" : (" | " + out.trim())));
+        return new ChatMessage("removed: " + container + (out.isBlank() ? "" : (" | " + out.trim())));
     }
 
     // -------------------- health --------------------

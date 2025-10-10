@@ -3,6 +3,7 @@ import './App.css';
 
 export default function App() {
   const [name, setName] = useState('hello-gpt')
+  const [companyId, setCompanyId] = useState("1c5ea0ce-eab3-47f7-a7a0-c20f2fdd0482");
   const [port, setPort] = useState('9080')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -27,6 +28,7 @@ export default function App() {
     setLogs([])
 
     const id = name.trim() || 'default'
+    const company  = companyId.trim() || "default";
 
     // 1) connect SSE
     try {
@@ -56,25 +58,20 @@ export default function App() {
 
     // 2) call API
     try {
-      const url = `/api/apps/template/${encodeURIComponent(name)}?port=${encodeURIComponent(port)}&streamId=${encodeURIComponent(name)}`
+      const url = `/api/apps/template/${encodeURIComponent(name)}?port=${encodeURIComponent(port)}&streamId=${encodeURIComponent(name)}&companyId=${encodeURIComponent(company)}`
       const res = await fetch(url, { method: 'POST' })
       if (!res.ok) {
         const text = await res.text()
         throw new Error(`HTTP ${res.status}: ${text}`)
-      }
-      fetch(url, { method: 'POST' });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status}: ${text}`);
       }
 
       const ct = res.headers.get('content-type') || '';
       if (ct.includes('application/json')) {
         const data = await res.json();
         let raw = JSON.stringify(data, null, 2)
-          .replace(/\\\\/g, '\\\\') 
-          .replace(/\\n/g, '\\n')  
-          .replace(/\\u001b/g, '\\u001b'); 
+          .replace(/\\\\/g, '\\\\')
+          .replace(/\\n/g, '\\n')
+          .replace(/\\u001b/g, '\\u001b');
         // pushLog("return Result(JSON raw):\n" + raw);
         pushLog("return Result(JSON):\n" + raw);
       } else {
@@ -96,6 +93,15 @@ export default function App() {
       <h1>Template API + SSE</h1>
 
       <div style={{ display: 'grid', gap: 12 }}>
+        <label>
+          Company ID (for container name):
+          <input
+            value={companyId}
+            onChange={(e) => setCompanyId(e.target.value)}
+            placeholder="e.g. leadingwin"
+            style={{ width: "100%", padding: "8px 10px", border: "1px solid #ddd", borderRadius: 8 }}
+          />
+        </label>
         <label>
           Name (SSE's id）：
           <input

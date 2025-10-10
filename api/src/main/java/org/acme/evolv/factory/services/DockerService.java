@@ -1,6 +1,11 @@
-package org.acme.evolv.factory;
+package org.acme.evolv.factory.services;
 
+import org.acme.evolv.utils.LogSseHub;
+import org.acme.evolv.utils.VueUtils;
 import org.jboss.logging.Logger;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -20,6 +25,7 @@ import java.util.List;
  *     No retries, no advanced error handling, no Windows support, etc.
  *   Just enough to get the job done.
  */
+@ApplicationScoped
 public class DockerService {
     private static final Logger LOG = Logger.getLogger(DockerService.class);
 

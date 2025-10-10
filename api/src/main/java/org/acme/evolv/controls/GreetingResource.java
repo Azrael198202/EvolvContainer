@@ -1,4 +1,4 @@
-package org.acme.evolv;
+package org.acme.evolv.controls;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

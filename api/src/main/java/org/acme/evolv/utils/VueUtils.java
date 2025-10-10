@@ -1,4 +1,4 @@
-package org.acme.evolv.factory;
+package org.acme.evolv.utils;
 
 import org.jboss.logging.Logger;
 

@@ -1,3 +1,3 @@
 package org.acme.evolv.DTO;
 
-public record CreateReq(String name, Integer port) {}
+public record CreateReq(String companyId, String name, String stream, Integer port) {}
