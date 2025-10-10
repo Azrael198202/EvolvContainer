@@ -126,8 +126,8 @@ public class VueFactoryService {
             if (streamId != null && !streamId.isBlank())
                 hub.send(streamId, "copy template done");
 
-            vue.patchTsx(Path.of(templateVuePath), companyId);
-            vue.patchCss(Path.of(templateVuePath), companyId);
+            vue.patchTsx(appDir.toPath(), companyId);
+            vue.patchCss(appDir.toPath(), companyId);
 
 
             log.append("patch ChatComponent.tsx\n");

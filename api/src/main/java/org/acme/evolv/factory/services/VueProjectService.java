@@ -6,7 +6,6 @@ import java.util.*;
 import org.acme.evolv.DTO.ChatConfig;
 import org.acme.evolv.factory.patcher.ChatComponentPatcher;
 import org.acme.evolv.factory.patcher.CssThemePatcher;
-import org.acme.evolv.factory.patcher.CssThemePatcher.ThemeCfg;
 import org.acme.evolv.interfaces.ChatConfigRepo;
 import org.jboss.logging.Logger;
 

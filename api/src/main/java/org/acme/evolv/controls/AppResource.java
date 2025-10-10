@@ -4,7 +4,6 @@ import org.acme.evolv.DTO.ChatMessage;
 import org.acme.evolv.DTO.CreateReq;
 import org.acme.evolv.DTO.CreateResp;
 import org.acme.evolv.factory.services.VueFactoryService;
-import org.acme.evolv.factory.services.VueFactoryService.Result;
 import org.acme.evolv.factory.shell.Shell;
 import org.acme.evolv.utils.LogSseHub;
 import org.acme.evolv.utils.PortUtils;
