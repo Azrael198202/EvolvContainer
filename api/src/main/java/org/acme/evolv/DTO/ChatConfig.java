@@ -5,6 +5,7 @@ public record ChatConfig(
   String apiUrl,
   String welcomeText,
   String messageIconUrl,
+  String headerIconUrl,
   String themePrimary,
   String contentBg,
   String footerBg,

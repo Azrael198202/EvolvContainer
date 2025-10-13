@@ -65,7 +65,8 @@ public class VueProjectService {
                 appDir,
                 nullToEmpty(cfg.apiUrl()),
                 nullToEmpty(cfg.welcomeText()),
-                nullToEmpty(cfg.messageIconUrl()));
+                nullToEmpty(cfg.messageIconUrl()),
+                nullToEmpty(cfg.headerIconUrl()));
         LOG.infof("[patchTsx] company=%s done", companyId);
     }
 

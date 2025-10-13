@@ -129,7 +129,6 @@ public class VueFactoryService {
             vue.patchTsx(appDir.toPath(), companyId);
             vue.patchCss(appDir.toPath(), companyId);
 
-
             log.append("patch ChatComponent.tsx\n");
             if (streamId != null && !streamId.isBlank())
                 hub.send(streamId, "patch ChatComponent.tsx done");

@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 public class ChatComponentPatcher {
     private static final Logger LOG = Logger.getLogger(ChatComponentPatcher.class);
 
-    public void patch(Path appDir, String apiUrl, String initMessage, String avatarUrl) throws Exception {
+    public void patch(Path appDir, String apiUrl, String initMessage, String avatarUrl, String titleUrl) throws Exception {
         Path p = findChatComponent(appDir);
         if (p == null) {
             LOG.warnf("[ChatComponentPatcher] ChatComponent.tsx not found under %s", appDir);
@@ -19,6 +19,7 @@ public class ChatComponentPatcher {
         String safeApi = escapeForJsString(apiUrl);
         String safeMsg = escapeForJsString(initMessage);
         String safeAvatar = escapeForJsString(avatarUrl);
+        String safeTitleImage = escapeForJsString(titleUrl);
 
         text = replaceFirstRegex(text,
             "const\\s+API_URL\\s*=\\s*[\"'][^\"']*[\"'];?",
@@ -40,6 +41,7 @@ public class ChatComponentPatcher {
         text = text.replace("{img_avatar}", "\"" + safeAvatar + "\"");
         text = text.replace("{init_message}", "\"" + safeMsg + "\"");
         text = text.replace("{api_url}", "\"" + safeApi + "\"");
+        text = text.replace("{img_title}", "\"" + safeTitleImage + "\"");
 
         Files.writeString(p, text, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
         LOG.infof("[ChatComponentPatcher] Patched %s", p);

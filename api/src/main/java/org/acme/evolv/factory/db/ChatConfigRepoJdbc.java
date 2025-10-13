@@ -32,6 +32,7 @@ public class ChatConfigRepoJdbc implements ChatConfigRepo {
                     rs.getString("api_url"),
                     rs.getString("message_text"),
                     rs.getString("message_icon_url"),
+                    rs.getString("header_icon_url"),
                     rs.getString("theme_primary"),
                     rs.getString("content_bg"),
                     rs.getString("footer_bg"),
