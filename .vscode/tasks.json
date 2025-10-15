@@ -4,7 +4,7 @@
     {
       "label": "quarkus:dev",
       "type": "shell",
-      "command": ".\\mvnw.cmd quarkus:dev -Ddebug",
+      "command": ".\\mvnw.cmd clean quarkus:dev -Ddebug",
       "options": { "cwd": "${workspaceFolder}\\api" },
       "isBackground": true,
       "problemMatcher": {

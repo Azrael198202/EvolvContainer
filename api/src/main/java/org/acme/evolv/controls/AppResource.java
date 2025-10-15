@@ -1,8 +1,8 @@
 package org.acme.evolv.controls;
 
-import org.acme.evolv.DTO.ChatMessage;
-import org.acme.evolv.DTO.CreateReq;
-import org.acme.evolv.DTO.CreateResp;
+import org.acme.evolv.dto.ChatMessage;
+import org.acme.evolv.dto.CreateReq;
+import org.acme.evolv.dto.CreateResp;
 import org.acme.evolv.factory.services.VueFactoryService;
 import org.acme.evolv.factory.shell.Shell;
 import org.acme.evolv.utils.LogSseHub;

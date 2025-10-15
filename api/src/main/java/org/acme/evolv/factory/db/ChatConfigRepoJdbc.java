@@ -1,6 +1,6 @@
 package org.acme.evolv.factory.db;
 
-import org.acme.evolv.DTO.ChatConfig;
+import org.acme.evolv.dto.ChatConfig;
 import org.acme.evolv.interfaces.ChatConfigRepo;
 
 import io.agroal.api.AgroalDataSource;

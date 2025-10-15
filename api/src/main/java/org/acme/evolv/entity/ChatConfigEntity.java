@@ -1,8 +1,8 @@
-package org.acme.evolv.Enity;
+package org.acme.evolv.entity;
 
 import java.util.UUID;
 
-import org.acme.evolv.DTO.ChatConfig;
+import org.acme.evolv.dto.ChatConfig;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;

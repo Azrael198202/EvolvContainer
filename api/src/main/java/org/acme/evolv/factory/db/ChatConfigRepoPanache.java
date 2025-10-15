@@ -1,7 +1,7 @@
 package org.acme.evolv.factory.db;
 
-import org.acme.evolv.DTO.ChatConfig;
-import org.acme.evolv.Enity.ChatConfigEntity;
+import org.acme.evolv.dto.ChatConfig;
+import org.acme.evolv.entity.ChatConfigEntity;
 import org.acme.evolv.interfaces.ChatConfigRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;

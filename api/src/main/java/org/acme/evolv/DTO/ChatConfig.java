@@ -1,4 +1,4 @@
-package org.acme.evolv.DTO;
+package org.acme.evolv.dto;
 
 public record ChatConfig(
   String companyId,
