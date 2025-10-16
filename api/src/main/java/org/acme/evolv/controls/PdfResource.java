@@ -5,9 +5,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import org.acme.evolv.entity.AiScenarioEntity;
+import org.acme.evolv.forms.PdfForm;
+import org.acme.evolv.utils.PathUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestForm;
-import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -22,26 +22,14 @@ public class PdfResource {
 
     @Inject
     @ConfigProperty(name = "ai.api.url")
-    String pythonApiUrl;  // 比如 http://localhost:8000/api/pdf/analyze
-
-    // 用于接收前端上传的 PDF 文件
-    public static class PdfForm {
-        @RestForm("file")
-        public FileUpload file;
-
-        @RestForm("id")
-        public String id;
-
-        @RestForm("companyid")
-        public String companyid;
-    }
-
+    String pythonApiUrl;  // e.x. http://localhost:8000/api/pdf/analyze
+    
     @POST
     @Path("/analyze")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Map<String, Object> analyzePdf(PdfForm form) throws Exception {
         if (form == null || form.file == null) {
-            throw new BadRequestException("缺少文件");
+            throw new BadRequestException("no files");
         }
 
         byte[] pdfBytes = Files.readAllBytes(form.file.filePath());
@@ -60,10 +48,9 @@ public class PdfResource {
             throw new NotFoundException();
 
         customPrompt = s.promptTemplate;
-
-        // 构造 multipart/form-data 请求发给 Python
+        
         HttpRequest request = buildMultipartRequest(
-                pythonApiUrl,
+                pythonApiUrl + PathUtils.getFullPath(getClass(), "analyzePdf", PdfForm.class).replace("/api/", ""),
                 Map.of(
                         "custom_prompt", customPrompt == null ? "" : customPrompt,
                         "model", model == null ? "" : model
@@ -78,7 +65,7 @@ public class PdfResource {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("Python API 调用失败: " + response.statusCode() + " → " + response.body());
+            throw new RuntimeException("Python API call failture: " + response.statusCode() + " → " + response.body());
         }
 
         com.fasterxml.jackson.databind.JsonNode root =
@@ -94,7 +81,6 @@ public class PdfResource {
         );
     }
 
-    /** 构造 multipart/form-data 请求（兼容 FastAPI UploadFile） */
     private HttpRequest buildMultipartRequest(
             String url,
             Map<String, String> formFields,
@@ -106,7 +92,6 @@ public class PdfResource {
         String boundary = "----Boundary" + UUID.randomUUID();
         var builder = new StringBuilder();
 
-        // 普通字段
         for (Map.Entry<String, String> e : formFields.entrySet()) {
             if (e.getValue() == null || e.getValue().isEmpty()) continue;
             builder.append("--").append(boundary).append("\r\n");
@@ -114,7 +99,6 @@ public class PdfResource {
             builder.append(e.getValue()).append("\r\n");
         }
 
-        // 文件部分头
         builder.append("--").append(boundary).append("\r\n");
         builder.append("Content-Disposition: form-data; name=\"").append(fileField)
                 .append("\"; filename=\"").append(fileName).append("\"\r\n");

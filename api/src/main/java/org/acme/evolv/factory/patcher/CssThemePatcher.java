@@ -7,11 +7,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
-/** 负责把主题色等注入到 App.css（或任意样式） */
+/** Responsible for injecting theme colors and other settings into App.css (or any specified stylesheet). */
 public class CssThemePatcher {
     private static final Logger LOG = Logger.getLogger(CssThemePatcher.class);
 
-    /** 主题配置（可按需扩展） */
+    /** Theme configuration (can be extended as needed) */
     public static record ThemeCfg(
         String primary,     // --brand-primary
         String contentBg,   // --app-bg
@@ -21,7 +21,7 @@ public class CssThemePatcher {
         String bubbleBot    // --bubble-bot
     ) {}
 
-    /** 查找并 patch 样式文件（默认 App.css；找不到则尝试 src/styles/chat-template.css） */
+    /** Locate and patch the target stylesheet (default: App.css; if not found, try src/styles/chat-template.css) */
     public void patch(Path appDir, ThemeCfg cfg) throws Exception {
         Path css = resolveCss(appDir);
         if (css == null) {
@@ -30,7 +30,7 @@ public class CssThemePatcher {
         }
         String t = Files.readString(css, StandardCharsets.UTF_8);
 
-        // 先替换显式占位符（如果模板采用了 {theme_primary} 这种）
+        // Replace explicit placeholders first (e.g., {theme_primary} if used in the template).
         Map<String,String> placeholders = Map.of(
             "\\{theme_primary\\}", nn(cfg.primary()),
             "\\{content_bg\\}",   nn(cfg.contentBg()),
@@ -43,7 +43,7 @@ public class CssThemePatcher {
             t = t.replaceAll(e.getKey(), Matcher.quoteReplacement(e.getValue()));
         }
 
-        // 然后确保 :root 里有 CSS 变量（若不存在则插入；存在则覆盖）
+        // Ensure that a :root block exists with CSS variables — create one if missing.
         t = upsertRootCssVars(t, Map.of(
             "--brand-primary", nn(cfg.primary()),
             "--app-bg",        nn(cfg.contentBg()),
@@ -67,7 +67,10 @@ public class CssThemePatcher {
         return null;
     }
 
-    /** 在 :root {...} 内 upsert 变量；若没有 :root 则创建一个并放到文件最前面 */
+    /*
+     * Within :root { ... }, upsert variables (add new ones or overwrite existing ones).
+     * If no :root is present, create it and place it at the top of the file.
+     */
     private String upsertRootCssVars(String css, Map<String,String> vars) {
         Pattern rootPat = Pattern.compile(":root\\s*\\{([\\s\\S]*?)\\}", Pattern.MULTILINE);
         Matcher m = rootPat.matcher(css);
@@ -91,7 +94,7 @@ public class CssThemePatcher {
         if (m.find()) {
             return m.replaceFirst(m.group(1) + "  " + key + ": " + val + ";");
         } else {
-            // 追加到结尾
+            // Append any remaining definitions to the end of the stylesheet.
             if (!body.endsWith("\n")) body += "\n";
             return body + "  " + key + ": " + val + ";\n";
         }

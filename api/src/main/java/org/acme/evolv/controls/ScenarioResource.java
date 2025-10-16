@@ -43,7 +43,7 @@ public class ScenarioResource {
                 uuidCompanyId);
 
         if (entities == null || entities.isEmpty()) {
-            return List.of(); // 返回 []
+            return List.of(); // return []
         }
 
         return entities.stream()
@@ -133,7 +133,8 @@ public class ScenarioResource {
     @Path("/{id}")
     @Transactional
     public Map<String, Object> delete(@PathParam("id") UUID id, @QueryParam("companyId") String companyId) {
-        long n = AiScenarioEntity.delete("id=?1 and companyId=?2", id, companyId);
+        UUID ucompanyId = UUID.fromString(companyId);
+        long n = AiScenarioEntity.delete("id=?1 and companyId=?2", id, ucompanyId);
         return Map.of("deleted", n > 0);
     }
 

@@ -14,21 +14,22 @@ public class Shell {
     }
 
     public static boolean isUnixLike() {
-        return !isWindows(); // Linux / macOS 想同处理
+        return !isWindows(); // Linux / macOS
     }
 
     /**
-     * 直接执行命令（不强行包 shell）。适合 docker 等本身就是可执行文件的命令。
-     * @param cmd 完整命令及参数（已分词）
-     * @param timeout 超时时间
-     * @param ignoreNonZeroExit 是否忽略非 0 退出码
+     * Execute the command directly (without forcing a shell).
+     * Suitable for executables like `docker` that can be run directly.
+     * @param cmd The full command with arguments (already tokenized).
+     * @param timeout Timeout duration.
+     * @param ignoreNonZeroExit Whether to ignore non-zero exit codes.
      */
     public static String runDirect(List<String> cmd, Duration timeout, boolean ignoreNonZeroExit)
             throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process p = pb.start();
-        // 简洁起见：阻塞等待；若需更稳健可做线程/selector 异步读
+        // For simplicity, this call blocks until completion; for robustness, consider async reading via threads/selectors.
         boolean finished = p.waitFor(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
         if (!finished) {
             p.destroyForcibly();
@@ -43,9 +44,9 @@ public class Shell {
     }
 
     /**
-     * 通过 shell 执行（仅在需要用管道、重定向、'|| true' 等 shell 语法时使用）
-     * - Windows: cmd /c
-     * - *nix: bash -lc
+     * Execute via shell (use only when shell syntax such as pipes, redirection, or '|| true' is required).
+     * - Windows: uses `cmd /c`
+     * - *nix: uses `bash -lc`
      */
     public static String runViaShell(String command, Duration timeout, boolean ignoreNonZeroExit)
             throws IOException, InterruptedException {
@@ -59,15 +60,16 @@ public class Shell {
     }
 
     /**
-     * 跨平台 docker 执行帮助：Windows 下可指定 docker.exe 绝对路径，避免 PATH 问题。
-     * 传入 null 则使用 "docker"。
+     * Cross-platform Docker execution helper:
+     * On Windows, you can specify the absolute path to `docker.exe` to avoid PATH issues.
+     * Pass `null` to use the default command `"docker"`.
      */
     public static String runDocker(List<String> dockerArgs, Duration timeout, boolean ignoreNonZeroExit,
                                    String windowsDockerAbsolutePathIfNeeded)
             throws IOException, InterruptedException {
         List<String> cmd = new ArrayList<>();
         if (isWindows()) {
-            // 优先绝对路径；否则依赖 PATH 中的 docker
+            // Prefer absolute path; otherwise rely on the docker command in PATH.
             String dockerCmd = windowsDockerAbsolutePathIfNeeded != null
                     ? windowsDockerAbsolutePathIfNeeded
                     : "docker";
