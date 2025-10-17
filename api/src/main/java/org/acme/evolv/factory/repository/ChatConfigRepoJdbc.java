@@ -1,4 +1,4 @@
-package org.acme.evolv.factory.db;
+package org.acme.evolv.factory.repository;
 
 import org.acme.evolv.dto.ChatConfig;
 import org.acme.evolv.interfaces.ChatConfigRepo;
