@@ -5,18 +5,24 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.evolv.entity.crm.*;
 import org.acme.evolv.factory.repository.*;
+import org.acme.evolv.utils.HashUtils;
+
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @ApplicationScoped
 public class RegisterService {
 
-    @Inject UserRepository userRepo;
-    @Inject CompanyRepository companyRepo;
-    @Inject UserCompanyRepository ucRepo;
+    @Inject
+    UserRepository userRepo;
+    @Inject
+    CompanyRepository companyRepo;
+    @Inject
+    UserCompanyRepository ucRepo;
 
     @Transactional
-    public Map<String, Object> register(Map<String, Object> payload) {
+    public Map<String, Object> register(Map<String, Object> payload) throws Exception {
         Map<String, Object> userData = (Map<String, Object>) payload.get("user");
         Map<String, Object> companyData = (Map<String, Object>) payload.get("company");
 
@@ -28,6 +34,7 @@ public class RegisterService {
         String name = (String) userData.get("name");
         String provider = (String) userData.getOrDefault("provider", "manual");
         String phone = (String) userData.get("phone");
+        String pwd = (String) userData.get("pwd");
 
         String companyName = (String) companyData.get("name");
         String companyAddr = (String) companyData.get("address");
@@ -38,6 +45,7 @@ public class RegisterService {
             company = new Company();
             company.name = companyName;
             company.address = companyAddr;
+            company.createdAt = company.updatedAt = LocalDateTime.now();;
             company.persist();
         }
 
@@ -50,6 +58,7 @@ public class RegisterService {
             user.phone = phone;
             user.provider = provider;
             user.profileCompleted = true;
+            user.pwd = HashUtils.crypString(pwd, 12);
             user.persist();
         }
 
@@ -60,7 +69,7 @@ public class RegisterService {
             uc.user = user;
             uc.company = company;
             uc.role = "owner";
-            uc.persist();
+            uc.persistAndFlush();
         }
 
         // 4. 返回信息
@@ -69,7 +78,7 @@ public class RegisterService {
         userMap.put("uuid", user.uuid.toString());
         userMap.put("name", user.name);
         userMap.put("email", user.email);
-        result.put("companyUuid", company);
+        result.put("companyUuid", company.company_id.toString());
         result.put("user", userMap);
         return result;
     }

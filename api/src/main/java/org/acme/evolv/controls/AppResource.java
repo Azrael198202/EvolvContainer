@@ -3,6 +3,7 @@ package org.acme.evolv.controls;
 import org.acme.evolv.dto.ChatMessage;
 import org.acme.evolv.dto.CreateReq;
 import org.acme.evolv.dto.CreateResp;
+import org.acme.evolv.factory.services.AuthService;
 import org.acme.evolv.factory.services.VueFactoryService;
 import org.acme.evolv.factory.shell.Shell;
 import org.acme.evolv.utils.LogSseHub;
@@ -12,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.time.Duration;
 import java.util.List;
@@ -24,6 +26,9 @@ public class AppResource {
 
     @Inject
     VueFactoryService svc;
+
+    @Inject 
+    AuthService service;
 
     @Inject
     LogSseHub hub; // for streaming logs sse/ws
@@ -95,5 +100,19 @@ public class AppResource {
                        @Context jakarta.ws.rs.sse.Sse sse,
                        @Context jakarta.ws.rs.sse.SseEventSink sink) {
         hub.register(id, sse, sink);
+    }
+
+    @POST
+    @Path("/login")
+    public Response login(Map<String, Object> payload) {
+        try {
+             Map<String, Object> result = service.login(payload);
+            return Response.ok(result).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity("Registration failed: " + e.getMessage()).build();
+        }
     }
 }

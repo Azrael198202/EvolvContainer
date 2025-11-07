@@ -21,7 +21,14 @@ public class User extends PanacheEntityBase {
     public String name;
     public String phone;
     public String provider;
+
+    @Column(name = "provider_id")
     public String providerId;
+
+    @Column(name = "password_hash")
+    public String pwd;
+
+    @Column(name = "profile_completed")
     public Boolean profileCompleted = false;
 
     @Column(name = "created_at")
