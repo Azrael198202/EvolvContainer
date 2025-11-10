@@ -2,6 +2,7 @@ package org.acme.evolv.factory.services;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.acme.evolv.factory.repository.UserRepository;
 import org.acme.evolv.utils.HashUtils;
@@ -18,7 +19,17 @@ public class AuthService {
 
     public Map<String, Object> login(Map<String, Object> payload) {
 
-        Map<String, Object> userData = (Map<String, Object>) payload.get("user");
+        Object userObj = payload.get("user");
+        Map<String, Object> userData = null;
+
+        if (userObj instanceof Map<?, ?>) {
+            userData = ((Map<?, ?>) userObj)
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            Map.Entry::getValue));
+        }
 
         String email = (String) userData.get("email");
         String pwd = (String) userData.get("pwd");

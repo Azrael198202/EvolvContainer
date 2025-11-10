@@ -10,6 +10,7 @@ import org.acme.evolv.utils.HashUtils;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class RegisterService {
@@ -23,9 +24,40 @@ public class RegisterService {
 
     @Transactional
     public Map<String, Object> register(Map<String, Object> payload) throws Exception {
-        Map<String, Object> userData = (Map<String, Object>) payload.get("user");
-        Map<String, Object> companyData = (Map<String, Object>) payload.get("company");
-        Map<String, Object> credentials = (Map<String, Object>) payload.get("credentials");
+
+        Object userObj = payload.get("user");
+        Object companyObj = payload.get("company");
+        Object credentialsObj = payload.get("credentials");
+        Map<String, Object> userData = null;
+        Map<String, Object> companyData = null;
+        Map<String, Object> credentials = null;
+
+        if (userObj instanceof Map<?, ?>) {
+            userData = ((Map<?, ?>) userObj)
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            Map.Entry::getValue));
+        }
+
+        if (companyObj instanceof Map<?, ?>) {
+            companyData = ((Map<?, ?>) userObj)
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            Map.Entry::getValue));
+        }
+
+        if (credentialsObj instanceof Map<?, ?>) {
+            credentials = ((Map<?, ?>) userObj)
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            Map.Entry::getValue));
+        }
 
         if (userData == null || companyData == null) {
             throw new IllegalArgumentException("Missing user or company info");
@@ -46,7 +78,8 @@ public class RegisterService {
             company = new Company();
             company.name = companyName;
             company.address = companyAddr;
-            company.createdAt = company.updatedAt = LocalDateTime.now();;
+            company.createdAt = company.updatedAt = LocalDateTime.now();
+            ;
             company.persist();
         }
 
