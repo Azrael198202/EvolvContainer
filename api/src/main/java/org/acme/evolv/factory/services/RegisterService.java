@@ -25,6 +25,7 @@ public class RegisterService {
     public Map<String, Object> register(Map<String, Object> payload) throws Exception {
         Map<String, Object> userData = (Map<String, Object>) payload.get("user");
         Map<String, Object> companyData = (Map<String, Object>) payload.get("company");
+        Map<String, Object> credentials = (Map<String, Object>) payload.get("credentials");
 
         if (userData == null || companyData == null) {
             throw new IllegalArgumentException("Missing user or company info");
@@ -34,7 +35,7 @@ public class RegisterService {
         String name = (String) userData.get("name");
         String provider = (String) userData.getOrDefault("provider", "manual");
         String phone = (String) userData.get("phone");
-        String pwd = (String) userData.get("pwd");
+        String pwd = (String) credentials.get("password");
 
         String companyName = (String) companyData.get("name");
         String companyAddr = (String) companyData.get("address");

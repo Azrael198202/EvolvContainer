@@ -33,11 +33,11 @@ public class AuthService {
             if (!HashUtils.checkCryp(pwd, user.pwd)) {
                 result.put("result", "ng");
                 result.put("message_code", "011");
+            } else {
+                result.put("result", "ok");
+                result.put("message_code", "000");
             }
         }
-
-        result.put("result", "ok");
-        result.put("message_code", "000");
 
         return result;
     }
