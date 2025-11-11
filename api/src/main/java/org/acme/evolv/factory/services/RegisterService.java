@@ -72,7 +72,7 @@ public class RegisterService {
         String companyName = (String) companyData.get("name");
         String companyAddr = (String) companyData.get("address");
 
-        // 1. 查找或创建公司
+        // 1. find company or create new company
         Company company = companyRepo.findByName(companyName);
         if (company == null) {
             company = new Company();
@@ -83,7 +83,7 @@ public class RegisterService {
             company.persist();
         }
 
-        // 2. 查找或创建用户
+        // 2. find user and create new user
         User user = userRepo.findByEmail(email);
         if (user == null) {
             user = new User();
@@ -96,7 +96,7 @@ public class RegisterService {
             user.persist();
         }
 
-        // 3. 建立用户-公司关系（如已存在则跳过）
+        // 3. create company and users 's relationship
         boolean exists = ucRepo.find("user.id = ?1 and company.id = ?2", user.id, company.id).firstResult() != null;
         if (!exists) {
             UserCompany uc = new UserCompany();
@@ -106,7 +106,7 @@ public class RegisterService {
             uc.persistAndFlush();
         }
 
-        // 4. 返回信息
+        // 4. return information
         Map<String, Object> result = new HashMap<>();
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("uuid", user.uuid.toString());
