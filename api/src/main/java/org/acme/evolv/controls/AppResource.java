@@ -3,6 +3,7 @@ package org.acme.evolv.controls;
 import org.acme.evolv.dto.ChatMessage;
 import org.acme.evolv.dto.CreateReq;
 import org.acme.evolv.dto.CreateResp;
+
 import org.acme.evolv.factory.services.AuthService;
 import org.acme.evolv.factory.services.VueFactoryService;
 import org.acme.evolv.factory.shell.Shell;
@@ -27,7 +28,7 @@ public class AppResource {
     @Inject
     VueFactoryService svc;
 
-    @Inject 
+    @Inject
     AuthService service;
 
     @Inject
@@ -46,24 +47,24 @@ public class AppResource {
         return new CreateResp(
                 req.companyId(),
                 req.name(),
-                p, 
+                p,
                 result.container(),
                 result.image(),
                 result.url(),
                 result.logs());
     }
 
-    // -------------------- create from template (with SSE logs) --------------------
+    // -------------------- create from template (with SSE logs)
+    // --------------------
     @POST
     @Path("/template/{name}")
-    public VueFactoryService.Result createFromTemplate(            
+    public VueFactoryService.Result createFromTemplate(
             @PathParam("name") String name,
             @QueryParam("port") Integer port,
-            @QueryParam("streamId") String streamId,   // front add streamId query param
-            @QueryParam("companyId") String companyId
-    ) throws Exception {
+            @QueryParam("streamId") String streamId, // front add streamId query param
+            @QueryParam("companyId") String companyId) throws Exception {
         int p = (port != null) ? port : PortUtils.pickPort(name);
-        // important: pass streamId to svc 
+        // important: pass streamId to svc
         return svc.createFromTemplate(companyId, name, p, streamId);
     }
 
@@ -79,8 +80,7 @@ public class AppResource {
                 List.of("rm", "-f", container),
                 Duration.ofSeconds(15),
                 /* ignoreNonZeroExit = */ true,
-                dockerWinAbs
-        );
+                dockerWinAbs);
 
         return new ChatMessage("removed: " + container + (out.isBlank() ? "" : (" | " + out.trim())));
     }
@@ -97,8 +97,8 @@ public class AppResource {
     @Path("/streams/{id}")
     @Produces(jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS)
     public void stream(@PathParam("id") String id,
-                       @Context jakarta.ws.rs.sse.Sse sse,
-                       @Context jakarta.ws.rs.sse.SseEventSink sink) {
+            @Context jakarta.ws.rs.sse.Sse sse,
+            @Context jakarta.ws.rs.sse.SseEventSink sink) {
         hub.register(id, sse, sink);
     }
 
@@ -106,7 +106,7 @@ public class AppResource {
     @Path("/login")
     public Response login(Map<String, Object> payload) {
         try {
-             Map<String, Object> result = service.login(payload);
+            Map<String, Object> result = service.login(payload);
             return Response.ok(result).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -115,4 +115,6 @@ public class AppResource {
             return Response.serverError().entity("Registration failed: " + e.getMessage()).build();
         }
     }
+
+    
 }
