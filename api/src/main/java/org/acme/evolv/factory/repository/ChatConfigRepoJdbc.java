@@ -30,6 +30,7 @@ public class ChatConfigRepoJdbc implements ChatConfigRepo {
             return new ChatConfig(
                     rs.getString("company_id"),
                     rs.getString("api_url"),
+                    rs.getString("header_title"),
                     rs.getString("message_text"),
                     rs.getString("message_icon_url"),
                     rs.getString("header_icon_url"),

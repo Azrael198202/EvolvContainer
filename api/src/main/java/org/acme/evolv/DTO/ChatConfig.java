@@ -3,6 +3,7 @@ package org.acme.evolv.dto;
 public record ChatConfig(
   String companyId,
   String apiUrl,
+  String headerText,
   String welcomeText,
   String messageIconUrl,
   String headerIconUrl,

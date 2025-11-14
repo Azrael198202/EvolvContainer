@@ -64,6 +64,7 @@ public class VueProjectService {
         tsxPatcher.patch(
                 appDir,
                 nullToEmpty(cfg.apiUrl()),
+                nullToEmpty(cfg.headerText()),
                 nullToEmpty(cfg.welcomeText()),
                 nullToEmpty(cfg.messageIconUrl()),
                 nullToEmpty(cfg.headerIconUrl()));

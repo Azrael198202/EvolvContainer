@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 public class ChatComponentPatcher {
     private static final Logger LOG = Logger.getLogger(ChatComponentPatcher.class);
 
-    public void patch(Path appDir, String apiUrl, String initMessage, String avatarUrl, String titleUrl) throws Exception {
+    public void patch(Path appDir, String apiUrl, String header, String initMessage, String avatarUrl, String messageIcon) throws Exception {
         Path p = findChatComponent(appDir);
         if (p == null) {
             LOG.warnf("[ChatComponentPatcher] ChatComponent.tsx not found under %s", appDir);
@@ -17,9 +17,10 @@ public class ChatComponentPatcher {
 
         String text = Files.readString(p, StandardCharsets.UTF_8);
         String safeApi = escapeForJsString(apiUrl);
+        String safeTitle = escapeForJsString(header);
         String safeMsg = escapeForJsString(initMessage);
         String safeAvatar = escapeForJsString(avatarUrl);
-        String safeTitleImage = escapeForJsString(titleUrl);
+        String safeMessageIcon = escapeForJsString(messageIcon);
 
         text = replaceFirstRegex(text,
             "const\\s+API_URL\\s*=\\s*[\"'][^\"']*[\"'];?",
@@ -39,9 +40,11 @@ public class ChatComponentPatcher {
         );
 
         text = text.replace("{img_avatar}", "\"" + safeAvatar + "\"");
+        //text = text.replace("{{img_avatar}}", safeAvatar);
+        text = text.replace("{chat_title}", safeTitle);
         text = text.replace("{init_message}", "\"" + safeMsg + "\"");
         text = text.replace("{api_url}", "\"" + safeApi + "\"");
-        text = text.replace("{img_title}", "\"" + safeTitleImage + "\"");
+        text = text.replace("{img_title}", safeMessageIcon);
 
         Files.writeString(p, text, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
         LOG.infof("[ChatComponentPatcher] Patched %s", p);
