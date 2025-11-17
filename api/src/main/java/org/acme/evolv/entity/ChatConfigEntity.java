@@ -29,6 +29,6 @@ public class ChatConfigEntity extends PanacheEntityBase {
 
   public ChatConfig toDto() {
     return new ChatConfig(companyId.toString(), apiUrl, welcomeText, messageIconUrl, headerIconUrl,
-        themePrimary, contentBg, footerBg, textColor, bubbleUser, bubbleBot);
+        themePrimary, contentBg, footerBg, textColor, bubbleUser, bubbleBot, apiUrl);
   }
 }
